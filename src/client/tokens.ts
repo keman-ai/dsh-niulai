@@ -15,11 +15,11 @@
 
 /** 设计稿 `:root` 的原始色，改配色从这里改，下面全部由它派生。 */
 export const NIULAI_PALETTE = {
-  /** 主橙：牛的身体色，用作品牌色与主按钮。 */
+  /** 主橙：牛的身体色。设计稿把它<b>保留给活动态 / 运行态</b>，不用作主按钮。 */
   orange: '#ff7a14',
-  /** 深橙：主橙的按下 / 悬停态。 */
+  /** 深橙：橙的按下 / 悬停态。 */
   orangeDeep: '#e95e0a',
-  /** 口鼻米黄：高亮描边与次级强调。 */
+  /** 口鼻米黄：<b>主操作色</b>（设计稿交接色卡的 Primary action = #F0D28A）。 */
   muzzle: '#f0d28a',
   /** 草绿 / 苔绿 / 稻草：原野三色，用于分隔线与低饱和装饰。 */
   grass: '#737746',
@@ -93,19 +93,21 @@ export const NIULAI_TOKENS: Record<string, string> = {
   '--dsw-alias-label-tertiary': p.text3,
   '--dsw-alias-label-caption': p.text3,
   '--dsw-alias-label-dimmed': p.grass,
-  // 落在主色块上的文字（橙底黑字）。用 bg 而不是纯黑，保持暖调统一。
+  // 落在主色块上的文字（米黄底深字）。用 bg 而不是纯黑，保持暖调统一。
   '--dsw-alias-label-primary-foreground': p.bg,
   '--dsw-alias-label-primary-inverted': p.surface3,
 
   // ── 品牌与主按钮 ──
-  // 🔴 内置暗色的 brand-primary 是近白色，主按钮因此是白底黑字。牛来把它换成主橙，
-  // 于是「发送」这类主按钮变成橙色 —— 这是皮肤最显眼的一处，也是牛的身体色落点。
-  '--dsw-alias-brand-primary': p.orange,
-  '--dsw-alias-brand-text': p.orange,
+  // 🔴 <b>主操作是口鼻米黄，不是橙</b>。设计稿的 Component language 写死了两条分工：
+  // 「orange reserved for active state / run state」「straw yellow for primary action」，
+  // 底部交接色卡把 Primary action 标成 #F0D28A。橙是牛在动的信号，不是按钮的默认色 ——
+  // 主按钮铺橙会让「运行中」和「可以点」变成同一个视觉语言，状态就没法读了。
+  '--dsw-alias-brand-primary': p.muzzle,
+  '--dsw-alias-brand-text': p.muzzle,
   '--dsw-alias-brand-primary-invert': p.bg,
-  '--dsw-alias-brand-primary-new-colorprimary-new-color': p.orange,
-  '--dsw-alias-button-primary-fill': p.orange,
-  '--dsw-alias-button-primary-hover': p.muzzle,
+  '--dsw-alias-brand-primary-new-colorprimary-new-color': p.muzzle,
+  '--dsw-alias-button-primary-fill': p.muzzle,
+  '--dsw-alias-button-primary-hover': p.straw,
   '--dsw-alias-button-primary-dimmed': p.moss,
   '--dsw-alias-button-contrast-fill': p.text,
   '--dsw-alias-button-elevated-fill': p.surface3,
@@ -114,6 +116,7 @@ export const NIULAI_TOKENS: Record<string, string> = {
   '--dsw-alias-button-ghost-active-fill': p.surface3,
   '--dsw-alias-button-ghost-active-hover': p.grass,
   '--dsw-alias-button-ghost-active-border': p.grass,
+  // info 按钮承载「去看正在发生的事」，属于 run state 一侧，用橙。
   '--dsw-alias-button-info-fill': p.orangeDeep,
   '--dsw-alias-button-info-hover': p.orange,
   '--dsw-alias-button-tool-bar-fill': 'rgba(115, 119, 70, 0.5)',
@@ -139,9 +142,10 @@ export const NIULAI_TOKENS: Record<string, string> = {
   '--dsw-alias-state-warn-tertiary': '#3a3220',
   '--dsw-alias-state-error-primary': p.danger,
   '--dsw-alias-state-error-secondary': p.danger,
-  // business 是 harness 的「信息 / 品牌蓝」语义，设计稿给了 --blue 正好对位。
-  '--dsw-alias-state-business-primary': p.blue,
-  '--dsw-alias-state-business-tertiary': '#26302f',
+  // 🔴 business 是 harness 标注「进行中 / 活动」的那档语义（spinner、运行指示都读它），
+  // 正是设计稿把橙留给的位置：orange reserved for active state / run state。
+  '--dsw-alias-state-business-primary': p.orange,
+  '--dsw-alias-state-business-tertiary': '#3a2a18',
 
   // ── Markdown 与代码 ──
   // 代码块比正文容器更沉，压到 bg-2，读长代码时不刺眼。

@@ -6,43 +6,17 @@
  * 画在**内容容器自己身上**才透得出来：CSS 的 background-image 绘制在该元素的
  * background-color 之上，而对话正文本身是透明的，于是牛从文字后面透出来。
  *
- * 挂载点只用 harness 的两个语义 data 属性，不碰 CSS module 的哈希类名：
- *   [data-chat-flow]   对话流列容器（ChatView.tsx）
- *   [data-phase='hero'] 新会话空屏（EmptyHero.tsx）
- * 这两个是结构语义，比 `[class*='sidebarCol']` 那种模糊匹配稳得多。
+ * 🔴 <b>牛只出现在新会话页</b>。设计稿的 Component language 写死了这条：
+ * 「cow image only on New Session hero and tiny agent status identity」。
+ * 曾经做过一版对话区常驻水印，那是违规的 —— 牛铺在正文后面会跟每一行字抢注意力，
+ * 而设计稿要的是「进新会话时牛在那儿，干活时它退到状态标识里」。
+ *
+ * 挂载点只用 harness 的语义 data 属性 `[data-phase='hero']`（EmptyHero.tsx），
+ * 不碰 CSS module 的哈希类名，比 `[class*='sidebarCol']` 那种模糊匹配稳得多。
  *
  * 全部规则挂在 `body[data-dsh-niulai]` 下：属性由 client 半在主题激活时打上、
  * 切走时摘掉，所以关掉皮肤等于这些规则整体失效，不留残迹。
  */
-
-/*
- * 对话区水印。
- *
- * position: fixed 让牛钉在视口上不随消息滚动 —— 跟着滚会像一张贴在纸上的画在动，
- * 而设计稿里它是「站在原野上」的定景。
- */
-:global(body[data-dsh-niulai] [data-chat-flow])::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: var(--niulai-cow-cover);
-  background-size: cover;
-  /* 44%：让牛头落在视觉三分之一处，与设计稿 .cow-cover 的取景一致。 */
-  background-position: center 44%;
-  opacity: 0.2;
-  /* 饱和度压一档：原图的橙大面积平铺时会盖过主橙按钮。 */
-  filter: saturate(0.8);
-  /* 上下压暗，保证顶栏与输入区附近的文字对比度不被牛吃掉。 */
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 96%);
-}
-
-/* 正文浮在水印之上。伪元素在 z-index: 0，这里把真实内容抬一层即可。 */
-:global(body[data-dsh-niulai] [data-chat-flow]) > * {
-  position: relative;
-  z-index: 1;
-}
 
 /*
  * 新会话整屏封面。
