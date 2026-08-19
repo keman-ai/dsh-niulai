@@ -1,50 +1,70 @@
 /**
  * 牛来的装饰层。
  *
- * 🔴 这里的选择器**只用 body 上的自有属性**，不碰 harness 内部的类名或结构。
- * 皮肤生态里常见的做法是拿 `[class*='sidebarCol']` 这类模糊匹配去钩住具体部件，
- * 观感更足，但 harness 一改版就碎。牛来把赌注下在配色层（token 是语义契约，
- * 不会随改版变含义），装饰只做一层谁都不依赖的背景，于是升级不会把皮肤打烂。
+ * 🔴 <b>为什么不铺在 body 最底层</b>：第一版就是那么做的，结果牛完全看不见 ——
+ * harness 的内容容器有自己的不透明底色（`bg-base`），把身下的一切盖死。背景图必须
+ * 画在**内容容器自己身上**才透得出来：CSS 的 background-image 绘制在该元素的
+ * background-color 之上，而对话正文本身是透明的，于是牛从文字后面透出来。
  *
- * 所有规则都挂在 `body[data-dsh-niulai]` 下：属性由 client 半在激活时打上、
- * 停用时摘掉，因此关掉皮肤等于这些规则整体失效，不留残迹。
+ * 挂载点只用 harness 的两个语义 data 属性，不碰 CSS module 的哈希类名：
+ *   [data-chat-flow]   对话流列容器（ChatView.tsx）
+ *   [data-phase='hero'] 新会话空屏（EmptyHero.tsx）
+ * 这两个是结构语义，比 `[class*='sidebarCol']` 那种模糊匹配稳得多。
+ *
+ * 全部规则挂在 `body[data-dsh-niulai]` 下：属性由 client 半在主题激活时打上、
+ * 切走时摘掉，所以关掉皮肤等于这些规则整体失效，不留残迹。
  */
 
-/* 原野底：牛图铺在最底层，压暗到刚好能看出轮廓，不与正文抢注意力。 */
-.stage {
+/*
+ * 对话区水印。
+ *
+ * position: fixed 让牛钉在视口上不随消息滚动 —— 跟着滚会像一张贴在纸上的画在动，
+ * 而设计稿里它是「站在原野上」的定景。
+ */
+:global(body[data-dsh-niulai] [data-chat-flow])::before {
+  content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background-image: var(--niulai-cow-cover);
   background-size: cover;
-  /* 44% 让牛头落在视觉上三分之一处，与设计稿 .cow-cover 的取景一致。 */
+  /* 44%：让牛头落在视觉三分之一处，与设计稿 .cow-cover 的取景一致。 */
   background-position: center 44%;
-  opacity: 0.16;
-  /* 饱和度压一档：原图的橙在大面积平铺时会盖过主橙按钮。 */
-  filter: saturate(0.82);
+  opacity: 0.2;
+  /* 饱和度压一档：原图的橙大面积平铺时会盖过主橙按钮。 */
+  filter: saturate(0.8);
+  /* 上下压暗，保证顶栏与输入区附近的文字对比度不被牛吃掉。 */
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 26%, #000 68%, transparent 96%);
+}
+
+/* 正文浮在水印之上。伪元素在 z-index: 0，这里把真实内容抬一层即可。 */
+:global(body[data-dsh-niulai] [data-chat-flow]) > * {
+  position: relative;
+  z-index: 1;
 }
 
 /*
- * 上下双重压暗：顶部盖住标题栏区域、底部盖住输入区，让这两处的文字始终有
- * 足够对比度，中段保留原野。不用整体 opacity 再调低——那样牛就彻底看不见了。
+ * 新会话整屏封面。
+ *
+ * 这是设计稿里牛最主要的露出（`.cow-cover`）：空屏没有正文要读，牛可以放到
+ * 水印的三倍浓度，一进新会话就是一头牛站在原野上看着你。
  */
-.stage::after {
+:global(body[data-dsh-niulai] [data-phase='hero'])::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(to bottom, var(--dsw-alias-bg-base) 0%, rgba(23, 25, 17, 0) 22%),
-    linear-gradient(to top, var(--dsw-alias-bg-base) 0%, rgba(23, 25, 17, 0) 30%);
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--niulai-cow-cover);
+  background-size: cover;
+  background-position: center 44%;
+  opacity: 0.62;
+  /* 底部收深，让下方的输入框与提示文字压在实色上。 */
+  mask-image: linear-gradient(to bottom, #000 0%, #000 52%, transparent 88%);
 }
 
-/*
- * 让内容浮在原野之上。
- *
- * 只提根容器的直接子元素，不指定具体是谁：harness 的根下无论渲染什么，
- * 都会盖在 z-index: 0 的背景层上面。
- */
-:global(body[data-dsh-niulai]) > :not(.stage) {
+:global(body[data-dsh-niulai] [data-phase='hero']) > * {
   position: relative;
   z-index: 1;
 }

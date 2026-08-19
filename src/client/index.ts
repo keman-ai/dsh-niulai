@@ -14,7 +14,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { NIULAI_COW_COVER } from './cow-art.generated.ts'
 import { NIULAI_TOKENS } from './tokens.ts'
-import styles from './niulai.module.css'
+import './niulai.module.css'
 
 export { NIULAI_PALETTE, NIULAI_TOKENS } from './tokens.ts'
 export { NIULAI_COW_AVATAR, NIULAI_COW_COVER } from './cow-art.generated.ts'
@@ -62,22 +62,21 @@ export function apply(ctx: Context, config: Config = {}): void {
 }
 
 /**
- * 装上原野背景，并在主题切换时跟着开关。
+ * 打开 / 关闭装饰层，跟随当前激活的主题。
  *
- * 背景**只在牛来主题激活时出现**：用户切回内置暗色而背景还铺着牛，会是纯粹的
- * 视觉污染 —— 那时的配色已经不是原野色了。所以这里订阅 `theme/change`，
- * 按当前激活的主题 id 决定挂不挂。
+ * 装饰**只在牛来主题激活时存在**：用户切回内置暗色而牛还铺着，配色已经不是原野色了，
+ * 那就是纯粹的视觉污染。所以订阅 `theme/change`，按当前 active id 决定挂不挂。
+ *
+ * 这里只做两件事：往 body 打标记属性、把图片以 CSS 变量交给样式表。真正的绘制在
+ * `niulai.module.css` 里，挂到 harness 的 `[data-chat-flow]` 与 `[data-phase='hero']`
+ * 上 —— 背景图必须画在内容容器自己身上才透得出来，插一个 body 底层元素会被容器
+ * 的不透明底色盖死（第一版就是这么翻车的）。
  *
  * @param ctx - 插件上下文。
- * @returns disposer：移除元素、摘掉属性、退订。
+ * @returns disposer：摘属性、清变量、退订。
  */
 function mountStage(ctx: Context): () => void {
   const body = document.body
-  const stage = document.createElement('div')
-  stage.className = styles.stage ?? 'niulai-stage'
-  stage.style.setProperty(COVER_VARIABLE, `url("${NIULAI_COW_COVER}")`)
-  // 纯装饰，读屏软件不该念它。
-  stage.setAttribute('aria-hidden', 'true')
 
   let attached = false
   const sync = (): void => {
@@ -86,11 +85,11 @@ function mountStage(ctx: Context): () => void {
       return
     }
     if (active) {
+      body.style.setProperty(COVER_VARIABLE, `url("${NIULAI_COW_COVER}")`)
       body.setAttribute(BODY_ATTRIBUTE, '')
-      body.prepend(stage)
     } else {
-      stage.remove()
       body.removeAttribute(BODY_ATTRIBUTE)
+      body.style.removeProperty(COVER_VARIABLE)
     }
     attached = active
   }
@@ -100,7 +99,7 @@ function mountStage(ctx: Context): () => void {
 
   return () => {
     off()
-    stage.remove()
     body.removeAttribute(BODY_ATTRIBUTE)
+    body.style.removeProperty(COVER_VARIABLE)
   }
 }
