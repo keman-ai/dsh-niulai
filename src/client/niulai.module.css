@@ -32,21 +32,53 @@
   pointer-events: none;
   background-image: var(--niulai-cow-cover);
   /*
-   * 🔴 <b>不用 cover 铺满</b>。原图只有 1011×702，没有更高清的源，铺满一块 2K/4K 屏
-   * 等于把每个像素放大两三倍，牛会糊成一团 —— 这是清晰度的真正瓶颈，调压缩质量救不回来。
-   * 按原始尺寸封顶居中显示，牛就是锐的；周围留给底色，再用下面的径向渐变把边缘化开，
-   * 看上去仍是一整片原野，而不是一张贴在中间的图。
+   * 铺满，按设计稿：New Session 页牛就是整块画面的主体，不是背景装饰。
+   *
+   * 原图 1011×702 在大屏上会被放大，但低模 3D 没有细节纹理，放大不糊 —— 之前看着糊
+   * 是 q76 的块效应，那已经换成 q92 解决了。缩着显示反而丢掉了设计稿要的压迫感。
    */
-  background-size: min(1011px, 100%) auto;
-  background-position: center 42%;
+  background-size: cover;
+  background-position: center 38%;
   background-repeat: no-repeat;
-  opacity: 0.62;
-  /* 四周向外淡出：横向比纵向收得快，避免宽屏上左右露出生硬的直边。 */
-  mask-image:
-    radial-gradient(120% 100% at 50% 42%, #000 38%, rgba(0, 0, 0, 0.55) 62%, transparent 88%),
-    linear-gradient(to bottom, #000 0%, #000 56%, transparent 92%);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
+  /* 设计稿里牛几乎不透明；留一点点透让它坐在原野底色上，不像贴上去的一张图。 */
+  opacity: 0.92;
+}
+
+/*
+ * 文字与输入框压在牛身上，靠一层自下而上的暗幕保证可读性 —— 设计稿也是这么做的
+ * （标题和输入区所在的下半部分明显压暗）。放在 ::after 而不是调低牛的透明度：
+ * 牛的上半身要保持鲜亮。
+ */
+:global(body[data-dsh-niulai] [data-phase='hero'])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(23, 25, 17, 0.32) 0%,
+    rgba(23, 25, 17, 0.1) 34%,
+    rgba(23, 25, 17, 0.72) 76%,
+    rgba(23, 25, 17, 0.94) 100%
+  );
+}
+
+/*
+ * 输入区贴底。
+ *
+ * harness 的 hero 阶段把 composer 那一摞 flex 居中（`.composerHero{align-self:center}`），
+ * 设计稿要的是贴着底边。`margin-top: auto` 是 flex 里最稳的贴底手法 —— 不去猜父容器
+ * 用的是哪种对齐值，也不动 align-self，只把剩余空间全推到上面。
+ *
+ * 类名是 CSS module 哈希，只能前缀匹配；这是本皮肤唯一一处模糊匹配，harness 改名
+ * 会让贴底失效（退回居中），但不会报错、其余部分照常。
+ */
+:global(body[data-dsh-niulai] [data-phase='hero'] [class*='composerHero']) {
+  margin-top: auto;
+  align-self: stretch;
+  /* 居中态留的 32px 底部浮空在贴底后就成了多余的缝。 */
+  padding-bottom: 12px;
 }
 
 :global(body[data-dsh-niulai] [data-phase='hero']) > * {
