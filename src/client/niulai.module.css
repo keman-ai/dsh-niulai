@@ -67,17 +67,21 @@
 /*
  * 输入区贴底。
  *
- * harness 的 hero 阶段把 composer 那一摞 flex 居中（`.composerHero{align-self:center}`），
- * 设计稿要的是贴着底边。`margin-top: auto` 是 flex 里最稳的贴底手法 —— 不去猜父容器
- * 用的是哪种对齐值，也不动 align-self，只把剩余空间全推到上面。
+ * 🔴 居中不是 composer 自己做的，是它的祖先干的：
+ *   .root[data-phase='hero'] .scrollBody { justify-content: center }
+ * 第一版去改 `.composerHero{margin-top:auto}` 没有任何效果 —— 那是孙元素，
+ * 越不过父级 flex 容器的 justify-content。改对地方才是一行的事。
  *
- * 类名是 CSS module 哈希，只能前缀匹配；这是本皮肤唯一一处模糊匹配，harness 改名
- * 会让贴底失效（退回居中），但不会报错、其余部分照常。
+ * 类名是 CSS module 哈希（形如 `_1Onn0a_scrollBody`），只能包含匹配；
+ * 这是本皮肤仅有的两处模糊匹配之一，harness 改名会让贴底退回居中，
+ * 不报错、其余部分照常。
  */
+:global(body[data-dsh-niulai] [data-phase='hero'] [class*='scrollBody']) {
+  justify-content: flex-end;
+}
+
+/* 贴底后，居中态为浮空留的那 32px 底部内边距就成了多余的缝。 */
 :global(body[data-dsh-niulai] [data-phase='hero'] [class*='composerHero']) {
-  margin-top: auto;
-  align-self: stretch;
-  /* 居中态留的 32px 底部浮空在贴底后就成了多余的缝。 */
   padding-bottom: 12px;
 }
 
