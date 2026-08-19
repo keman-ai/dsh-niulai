@@ -1,0 +1,26 @@
+{
+  "id": "niulai",
+  "name": "牛来原野",
+  "nameEn": "Niulai Field",
+  "author": "Science Roam Limited",
+  "tagline": "暖黑原野配色 + 低模橙牛背景，一头牛站在你的对话底下",
+  "description": "把 DeepSeek Harness 换成一片黄昏原野：底色是带草绿倾向的暖黑（#171911），主按钮是牛的身体橙（#ff7a14），分隔线与滚动条走草绿到稻草的过渡，低模橙牛作为半透明背景铺在对话区之下。只做暗色。\n\n配色走 harness 的 --dsw-alias-* 语义层（约 80 个 token），装饰只挂在自有的 body 属性上，不钩任何 harness 内部类名 —— 所以宿主改版时这套皮肤不会碎。",
+  "tags": [
+    "暗色",
+    "暖色",
+    "原野",
+    "整活",
+    "低模"
+  ],
+  "accent": "#ff7a14",
+  "bodyAttr": "data-dsh-niulai",
+  "package": "dsh-niulai",
+  "wiring": {
+    "id": "niulai",
+    "bundleWired": true
+  },
+  "preview": {
+    "dark": "preview/dark.webp"
+  },
+  "colorScheme": "dark"
+}

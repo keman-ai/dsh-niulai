@@ -1,0 +1,66 @@
+{
+  "name": "dsh-niulai",
+  "version": "0.1.0",
+  "description": "牛来原野 —— DeepSeek Harness 的暗色皮肤：暖黑原野配色 + 低模橙牛背景",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "skin",
+    "theme",
+    "niulai",
+    "dark"
+  ],
+  "license": "MIT",
+  "author": "Science Roam Limited",
+  "homepage": "https://github.com/keman-ai/dsh-niulai#readme",
+  "bugs": {
+    "url": "https://github.com/keman-ai/dsh-niulai/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keman-ai/dsh-niulai.git"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "skin.json",
+    "preview",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "check": "tsc --noEmit",
+    "prepublishOnly": "tsdown"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "lightningcss": "^1.29.0",
+    "tsdown": "^0.15.6",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
