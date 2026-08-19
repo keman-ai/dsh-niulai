@@ -68,9 +68,9 @@ export function apply(ctx: Context, config: Config = {}): void {
  * 那就是纯粹的视觉污染。所以订阅 `theme/change`，按当前 active id 决定挂不挂。
  *
  * 这里只做两件事：往 body 打标记属性、把图片以 CSS 变量交给样式表。真正的绘制在
- * `niulai.module.css` 里，挂到 harness 的 `[data-chat-flow]` 与 `[data-phase='hero']`
- * 上 —— 背景图必须画在内容容器自己身上才透得出来，插一个 body 底层元素会被容器
- * 的不透明底色盖死（第一版就是这么翻车的）。
+ * `niulai.module.css` 里，挂到 harness 的 `[data-phase='hero']`（新会话空屏）——
+ * 设计稿规定牛只出现在那里。背景图必须画在内容容器自己身上才透得出来，插一个
+ * body 底层元素会被容器的不透明底色盖死（第一版就是这么翻车的）。
  *
  * @param ctx - 插件上下文。
  * @returns disposer：摘属性、清变量、退订。
