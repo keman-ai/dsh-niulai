@@ -31,11 +31,32 @@ const COVER_VARIABLE = '--niulai-cow-cover'
 /** 主题服务；`inject` 保证它先就绪。 */
 export const inject = ['theme']
 
-export function apply(ctx: Context): void {
+/** 浏览器半的配置，与 host 半同名字段。 */
+export interface Config {
+  /**
+   * 装上就切到牛来，默认开。
+   *
+   * 为什么需要这个开关：harness 的第三方主题 id **不进内置 settings schema**
+   * （见 ui-theme README），选择只在进程内活着，不写进 `$DSH_HOME/settings.yaml`。
+   * 也就是说不自动应用的话，用户每次启动 dsh 都得回「设置 → 外观」重选一遍 ——
+   * 装了皮肤却看不到皮肤，是这套机制下的默认结果。
+   *
+   * 关掉它就回到「装上只是可选，手动去选」的行为。
+   */
+  autoApply?: boolean
+}
+
+export function apply(ctx: Context, config: Config = {}): void {
   ctx.effect(
     () => ctx.theme.register({ id: THEME_ID, colorScheme: 'dark', tokens: NIULAI_TOKENS }),
     'niulai: theme registration',
   )
+
+  if (config.autoApply !== false && ctx.theme.getTheme().active.id !== THEME_ID) {
+    // 只在装载这一刻切一次，之后不再干预：用户随时可以在外观里切走，
+    // 本插件不会把选择抢回来（没有监听去纠正它）。
+    ctx.theme.setTheme(THEME_ID)
+  }
 
   ctx.effect(() => mountStage(ctx), 'niulai: field backdrop')
 }

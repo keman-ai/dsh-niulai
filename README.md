@@ -16,7 +16,17 @@ dsh plugin --profile web add -w github:keman-ai/dsh-niulai
 
 **`-w` 不能省**。profile 目录自带 `pnpm-workspace.yaml`，pnpm 会认为它是 workspace 根，不带这个标志直接报 `ERR_PNPM_ADDING_TO_ROOT`。
 
-重启一次 dsh，到 **设置 → 外观** 里选「牛来原野」。
+重启一次 dsh，**装上即生效**。
+
+想改回「装上只注册、由自己去选」的行为，在 profile 的 `cordis.patch.yml` 里关掉自动应用：
+
+```yaml
+- id: niulai
+  config:
+    autoApply: false
+```
+
+之所以默认自动应用：harness 的第三方主题 id **不进内置 settings schema**（见 ui-theme 的 README），选择只在进程内活着、不写进 `$DSH_HOME/settings.yaml`。不自动应用的话，每次启动 dsh 都得回「设置 → 外观」重选一遍——装了皮肤却看不到皮肤。切走随时可以，本插件只在装载那一刻切一次，不会把选择抢回来。
 
 仓库里带着构建产物（`lib/`），也没有 `prepare` 脚本，所以从 git 源安装时 pnpm 不需要执行任何构建脚本，你不必为它授权 `allowBuilds`。
 

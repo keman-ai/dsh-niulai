@@ -17,6 +17,18 @@ export const name = 'niulai'
 /** 主题 id，与浏览器半一致；宿主侧脚本可以引它来判断皮肤是否在用。 */
 export const THEME_ID = 'niulai'
 
-export function apply(ctx: Context): void {
-  ctx.logger.info('[niulai] 牛来原野已挂载，在「设置 → 外观」里选「牛来原野」启用')
+/** 配置在 cordis.yml 里给，Loader 会连同这一行一起传给浏览器半。 */
+export interface Config {
+  /**
+   * 装上就切到牛来，默认开。关掉则只注册、不应用，等用户自己去「设置 → 外观」选。
+   *
+   * 默认开是因为 harness 的第三方主题 id 不进内置 settings schema，选择不持久化：
+   * 不自动应用的话，每次启动 dsh 都得重选一遍。
+   */
+  autoApply?: boolean
+}
+
+export function apply(ctx: Context, config: Config = {}): void {
+  const mode = config.autoApply === false ? '需在「设置 → 外观」里手动选' : '已自动应用'
+  ctx.logger.info('[niulai] 牛来原野已挂载（%s）', mode)
 }
