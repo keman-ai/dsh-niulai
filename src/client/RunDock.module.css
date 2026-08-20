@@ -1,0 +1,85 @@
+/** 牛来右侧边栏：常驻、可收起。宽度取设计稿的 details ≈ 322px。 */
+
+.dock {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  /* 收起态只占把手的宽度，不挡任何东西。 */
+  width: auto;
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}
+
+/*
+ * 把手：收起时是唯一可见的部分，所以要够得着又不抢眼。
+ * 垂直居中贴在边栏左沿，与边栏一起移动。
+ */
+.handle {
+  align-self: center;
+  width: 18px;
+  height: 56px;
+  margin-right: -1px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.handle:hover {
+  background: var(--dsw-alias-interactive-bg-hover-solid);
+  color: var(--dsw-alias-label-primary);
+}
+
+/* 原型图 .details 带过渡；瞬间开合会让人分不清是收起了还是崩了。 */
+.body {
+  width: 322px;
+  animation: niulai-dock-in 180ms ease-out;
+  display: flex;
+  flex-direction: column;
+  background: var(--dsw-alias-bg-base);
+  border-left: 1px solid var(--dsw-alias-border-l2);
+}
+
+.header {
+  flex: none;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--dsw-alias-label-primary);
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+/*
+ * 展开时把主区让出等宽的空间。
+ *
+ * 挤压 harness 的根容器而不是给 body 加 padding：body 上有 fixed 定位的浮层
+ * （模态、菜单），给 body 加内边距不会影响它们，反而会让固定层与内容错位。
+ * 这里只推真正承载布局的那一层。
+ */
+:global(body[data-niulai-dock-open] > div:first-of-type) {
+  padding-right: 322px;
+  box-sizing: border-box;
+}
+
+@keyframes niulai-dock-in {
+  from { width: 0; opacity: 0; }
+  to { width: 322px; opacity: 1; }
+}
+
+.handle {
+  transition: background 140ms ease-out, color 140ms ease-out;
+}

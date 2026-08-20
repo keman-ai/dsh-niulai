@@ -11,8 +11,11 @@
  * 两件事都走 `ctx.effect`，dispose 时属性摘掉、元素移除、主题注销，界面回到原样。
  */
 
+import { createElement } from 'react'
+import { createRoot } from 'react-dom/client'
 import type { Context } from '@deepseek-ai/cordis'
 import { NIULAI_COW_AVATAR, NIULAI_COW_COVER } from './cow-art.generated.ts'
+import { NiulaiRunDock } from './RunDock.tsx'
 import { NIULAI_TOKENS } from './tokens.ts'
 import './niulai.module.css'
 
@@ -52,6 +55,17 @@ export interface Config {
 export function apply(ctx: Context, config: Config = {}): void {
   // 注册与挂载放同一个 effect，保证顺序：mountStage 里会 setTheme，
   // 而 setTheme 一个未注册的 id 会直接抛错。
+  /*
+   * 「牛来」运行概览：一根自己的右侧边栏，常驻、可收起。
+   *
+   * 不挂进 harness 的右侧详情栏 —— 那个 `details` slot 是 `{ kind: 'single' }` 且已被
+   * 官方 DetailsPanel 占住，第三方注册直接抛错；硬把 DOM 塞进它的容器又会跟「点工具行
+   * 看详情」抢地盘。自己开一根 fixed 侧栏，两者互不干扰，可以同时用。
+   *
+   * 也不再占用 `conversation.view` 那个视图 tab：同一份内容出现在两处只会让人困惑。
+   */
+  ctx.effect(() => mountDock(), 'niulai: run overview dock')
+
   ctx.effect(() => {
     const unregister = ctx.theme.register({ id: THEME_ID, colorScheme: 'dark', tokens: NIULAI_TOKENS })
     const unmount = mountStage(ctx, config.autoApply !== false)
@@ -132,5 +146,26 @@ function mountStage(ctx: Context, autoApply: boolean): () => void {
     body.removeAttribute(BODY_ATTRIBUTE)
     body.style.removeProperty(COVER_VARIABLE)
     body.style.removeProperty(AVATAR_VARIABLE)
+  }
+}
+/**
+ * 挂载右侧边栏。
+ *
+ * 自建宿主节点 + React root：面板不属于 harness 的任何 slot，生命周期完全由本插件
+ * 负责，dispose 时卸载组件树并移走节点，界面回到原样。
+ *
+ * @returns disposer。
+ */
+function mountDock(): () => void {
+  const host = document.createElement('div')
+  host.setAttribute('data-niulai-dock', '')
+  document.body.append(host)
+  const root = createRoot(host)
+  root.render(createElement(NiulaiRunDock))
+  return () => {
+    // 异步卸载：React 不允许在自己的渲染周期内同步 unmount。
+    queueMicrotask(() => { root.unmount() })
+    host.remove()
+    document.body.removeAttribute('data-niulai-dock-open')
   }
 }

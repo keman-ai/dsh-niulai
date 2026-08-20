@@ -304,3 +304,88 @@
   padding: 18px 14px;
   text-align: center;
 }
+
+/* ==========================================================================
+ * 原型图的质感层 —— 全是纯 CSS，不依赖 harness 的 DOM 结构，改版不会碎。
+ * ========================================================================== */
+
+/*
+ * 全局细纹理。
+ *
+ * 原型图 `.app:before`：3.5% 不透明度的横竖细线 + screen 混合。这层是"原野质感"
+ * 的关键 —— 没有它，牛来只是一套暖色色块；有了它才有旧显示器那点颗粒感。
+ *
+ * z-index 取原型图的 100 并 pointer-events: none：盖在所有内容之上才有统一的
+ * 蒙版效果，而 3.5% 的强度不影响任何文字可读性，也绝不拦截点击。
+ */
+:global(body[data-dsh-niulai])::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: screen;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 6px);
+}
+
+/*
+ * New Session 的状态胶囊：「● 牛来在这儿。给它一个任务。」
+ *
+ * 原型图 `.new-status`：圆角 999、半透明深底、8px 毛玻璃，浮在牛图之上、标题之前。
+ * 挂在 hero 的纵向 stack 上（`_stack`），它是标题与正文的共同父容器，::before 天然
+ * 落在最前面。
+ *
+ * 选择器用 `_stack` 而非 `stack`：对话区还有个 `composerStack`，大小写敏感下
+ * "composerStack" 不含 "_stack"，不会误伤。
+ */
+:global(body[data-dsh-niulai] [data-phase='hero'] [class*='_stack'])::before {
+  content: '● 牛来在这儿。给它一个任务。';
+  align-self: center;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(19, 20, 14, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  color: #e7e1d2;
+  /* 圆点用主橙：这是"牛在场"的信号，与 run state 同一套色语言。 */
+  text-shadow: none;
+}
+
+/*
+ * 输入区的自下而上遮罩。
+ *
+ * 原型图 `.composer-shell` 用 `linear-gradient(180deg, transparent, #191b13 20%)`
+ * 让消息滚到输入框附近自然淡出，而不是被硬边切断。
+ */
+:global(body[data-dsh-niulai] [data-composer-seat]) {
+  background: linear-gradient(180deg, rgba(23, 25, 17, 0) 0%, var(--dsw-alias-bg-base) 22%);
+}
+
+/*
+ * 加载指示：草绿底 + 橙色缺口。
+ *
+ * 原型图 `.spinner` 是 `1.5px solid #555a46` 配 `border-top-color: 主橙`。harness 的
+ * 转圈是 svg，拿不到 border，所以退一步只统一描边色调 —— 至少不再是中性灰。
+ */
+:global(body[data-dsh-niulai] [class*='spinner']),
+:global(body[data-dsh-niulai] [class*='Spinner']) {
+  color: var(--dsw-alias-state-business-primary);
+}
+
+/*
+ * 用户头像：橙色渐变圆。
+ *
+ * 原型图 `.avatar` 是 `linear-gradient(145deg, 主橙, #b84c0b)` 配浅橙字。
+ * ⚠️ 探针在当前页面没抓到 avatar 类名（要有对话消息才渲染），所以这条是<b>按类名
+ * 惯例写的、未经实测</b>；失配的话不显示，不影响其它。
+ */
+:global(body[data-dsh-niulai] [class*='avatar']:not(img)) {
+  background: linear-gradient(145deg, #ff7a14, #b84c0b);
+  color: #ffe1b5;
+}

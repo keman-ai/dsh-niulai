@@ -64,9 +64,34 @@ declare module '@deepseek-ai/cordis' {
     setTheme(id: string): void
   }
 
+  /** 视图 tab 注册项（`conversation.view` 是 list slot，第三方可追加）。 */
+  export interface ViewSlotRegistration {
+    name: 'conversation.view'
+    /** 视图 id，也是激活时 `only:` 匹配的值。 */
+    id: string
+    /** 排序，数字越大越靠后；官方的 trajectory 用 10。 */
+    order?: number
+    /** tab 上显示的名字，thunk 形式以便跟随语言切换。 */
+    label: () => string
+  }
+
+  /** slot 服务，只列本插件用到的。 */
+  export interface SlotsService {
+    /** 在目标 slot 就绪时执行注册；返回 disposer。 */
+    inject(name: string, register: () => Disposer): Disposer
+    /**
+     * 注册一个 slot 条目。
+     * 🔴 `single` 型 slot 重复注册会抛错，只有 `list` 型允许多个占用者
+     * （`conversation.view` 正是 list）。
+     */
+    register(registration: ViewSlotRegistration, component: unknown): Disposer
+  }
+
   /** 插件 apply 收到的上下文（本插件用到的成员）。 */
   export interface Context {
     logger: Logger
+    /** `inject: ['slots']` 之后可用。 */
+    slots: SlotsService
     /** `inject: ['theme']` 声明之后才可用。 */
     theme: ThemeService
     /** 注册即副作用：返回的 disposer 绑定在当前 fiber 上。 */
