@@ -12,7 +12,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import { NIULAI_COW_COVER } from './cow-art.generated.ts'
+import { NIULAI_COW_AVATAR, NIULAI_COW_COVER } from './cow-art.generated.ts'
 import { NIULAI_TOKENS } from './tokens.ts'
 import './niulai.module.css'
 
@@ -27,6 +27,9 @@ export const BODY_ATTRIBUTE = 'data-dsh-niulai'
 
 /** 背景图变量名：CSS 里读它，值在这里注入，图片资源不进样式表。 */
 const COVER_VARIABLE = '--niulai-cow-cover'
+
+/** 小牛头变量名，给「正在干活」的状态标识用。 */
+const AVATAR_VARIABLE = '--niulai-cow-avatar'
 
 /** 主题服务；`inject` 保证它先就绪。 */
 export const inject = ['theme']
@@ -86,10 +89,12 @@ function mountStage(ctx: Context): () => void {
     }
     if (active) {
       body.style.setProperty(COVER_VARIABLE, `url("${NIULAI_COW_COVER}")`)
+      body.style.setProperty(AVATAR_VARIABLE, `url("${NIULAI_COW_AVATAR}")`)
       body.setAttribute(BODY_ATTRIBUTE, '')
     } else {
       body.removeAttribute(BODY_ATTRIBUTE)
       body.style.removeProperty(COVER_VARIABLE)
+      body.style.removeProperty(AVATAR_VARIABLE)
     }
     attached = active
   }
@@ -101,5 +106,6 @@ function mountStage(ctx: Context): () => void {
     off()
     body.removeAttribute(BODY_ATTRIBUTE)
     body.style.removeProperty(COVER_VARIABLE)
+    body.style.removeProperty(AVATAR_VARIABLE)
   }
 }
