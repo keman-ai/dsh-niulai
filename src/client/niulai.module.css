@@ -76,7 +76,7 @@
  * 这是本皮肤仅有的两处模糊匹配之一，harness 改名会让贴底退回居中，
  * 不报错、其余部分照常。
  */
-:global(body[data-dsh-niulai] [data-phase='hero'] [class*='scrollBody']) {
+:global(body[data-dsh-niulai] [data-phase='hero'] [data-conversation-scroll]) {
   justify-content: flex-end;
   /*
    * hero 没有可滚的内容，牛应当铺满整屏。不关掉这两条就会：
@@ -87,23 +87,35 @@
    */
   overflow: hidden;
   scrollbar-gutter: auto;
-  /*
-   * 🔴 左右不居中的真凶。harness 在 composer overlay 存在时给它做了不对称定位：
-   *   .scrollBody:has([data-conversation-composer-overlay]) > .composerSeat {
-   *     right: var(--dsh-scrollbar-width);  left: 0;
-   *   }
-   * 那 8px 是补偿「Chat 的座位被自身滚动条压窄」用的。上面既然已经把 hero 的滚动
-   * 关掉、没有滚动条要让位，这份补偿就成了纯粹的左右不对称。
-   *
-   * 覆盖变量而不是去改 .composerSeat 的 right：变量是 ui-theme 公开的口子，
-   * 改它不必再多匹配一个哈希类名，作用域也天然只限 hero。
-   */
-  --dsh-scrollbar-width: 0px;
 }
 
 /* 贴底后，居中态为浮空留的那 32px 底部内边距就成了多余的缝。 */
 :global(body[data-dsh-niulai] [data-phase='hero'] [class*='composerHero']) {
   padding-bottom: 12px;
+}
+
+/*
+ * 🔴 输入区相对<b>整个窗口</b>居中，而不是相对中间列。
+ *
+ * 实测 DOM 的层级是：
+ *   .centerCol → [data-phase=hero] → [data-conversation-scroll] → [data-composer-seat]
+ * 侧边栏占掉左边约 286px，所以「在 centerCol 里居中」＝ 在窗口里明显偏右。牛是铺满
+ * 整个窗口的（设计稿的 New Session 本就是全屏接管、没有侧栏），两者的中心必须重合，
+ * 否则牛在正中、输入框在右边，一眼就看得出错位。
+ *
+ * `margin-left: calc(50% - 50vw)` 是让子元素挣脱父列、横跨整个视口的标准写法：
+ * 50% 是父列半宽，50vw 是视口半宽，两者之差正好把左边界推回视口左沿。座位铺满视口后
+ * 再让内部的 composer 居中，中心就与牛对齐了。
+ *
+ * ⚠️ 曾误判为 harness 的滚动条补偿（`.scrollBody:has([data-conversation-composer-overlay])
+ * > .composerSeat { right: var(--dsh-scrollbar-width) }`）。实测该 overlay 在 DOM 里
+ * 出现 0 次，那条规则根本没生效，与本现象无关。
+ */
+:global(body[data-dsh-niulai] [data-phase='hero'] [data-composer-seat]) {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  align-items: center;
 }
 
 :global(body[data-dsh-niulai] [data-phase='hero']) > * {
