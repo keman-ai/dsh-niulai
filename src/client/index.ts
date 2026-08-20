@@ -50,18 +50,16 @@ export interface Config {
 }
 
 export function apply(ctx: Context, config: Config = {}): void {
-  ctx.effect(
-    () => ctx.theme.register({ id: THEME_ID, colorScheme: 'dark', tokens: NIULAI_TOKENS }),
-    'niulai: theme registration',
-  )
-
-  if (config.autoApply !== false && ctx.theme.getTheme().active.id !== THEME_ID) {
-    // 只在装载这一刻切一次，之后不再干预：用户随时可以在外观里切走，
-    // 本插件不会把选择抢回来（没有监听去纠正它）。
-    ctx.theme.setTheme(THEME_ID)
-  }
-
-  ctx.effect(() => mountStage(ctx), 'niulai: field backdrop')
+  // 注册与挂载放同一个 effect，保证顺序：mountStage 里会 setTheme，
+  // 而 setTheme 一个未注册的 id 会直接抛错。
+  ctx.effect(() => {
+    const unregister = ctx.theme.register({ id: THEME_ID, colorScheme: 'dark', tokens: NIULAI_TOKENS })
+    const unmount = mountStage(ctx, config.autoApply !== false)
+    return () => {
+      unmount()
+      unregister()
+    }
+  }, 'niulai: theme + backdrop')
 }
 
 /**
@@ -78,11 +76,38 @@ export function apply(ctx: Context, config: Config = {}): void {
  * @param ctx - 插件上下文。
  * @returns disposer：摘属性、清变量、退订。
  */
-function mountStage(ctx: Context): () => void {
+function mountStage(ctx: Context, autoApply: boolean): () => void {
   const body = document.body
 
   let attached = false
+  /**
+   * 自动应用只做一次。
+   *
+   * 🔴 不能放在 apply() 里直接 setTheme：ui-theme 的 loopback 浏览器先用 `system`
+   * 顶上，**再到后台去读 Host 的 `ui-theme.preference`**，读回来会把插件刚设的选择
+   * 覆盖掉 —— 表现就是"装了皮肤但打开还是内置暗色"，而且毫无报错。所以改成跟着
+   * `theme/change` 走：等偏好落定后的那一次通知里再切，切完置位，此后不再干预，
+   * 用户随时可以在外观里切走，插件不会抢回来。
+   */
+  let autoApplied = false
+
   const sync = (): void => {
+    const activeId = ctx.theme.getTheme().active.id
+    // 一旦真的切成功过，就把主动权彻底交还用户：此后切走不再抢回来。
+    if (activeId === THEME_ID) {
+      autoApplied = true
+    } else if (autoApply && !autoApplied) {
+      // 🔴 必须「切到成功为止」而不是「只切一次」：ui-theme 先用 system 顶上、
+      // 再到后台读 Host 的 ui-theme.preference，读回来会把插件刚设的值覆盖掉。
+      // 只切一次的话，那一次十有八九落在覆盖之前，表现就是装了皮肤却还是内置暗色，
+      // 而且毫无报错 —— 实测就是这么翻的车。
+      try {
+        ctx.theme.setTheme(THEME_ID)
+      } catch (error) {
+        ctx.logger.warn('[niulai] 自动应用失败，请到「设置 → 外观」手动选择', error)
+      }
+      return
+    }
     const active = ctx.theme.getTheme().active.id === THEME_ID
     if (active === attached) {
       return
