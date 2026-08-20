@@ -28,11 +28,23 @@ interface RunStats {
   running: boolean
 }
 
-/** 取元素的可见文本，去掉图标与多余空白。 */
-function textOf(selector: string): string | undefined {
-  const el = document.querySelector(selector)
-  const text = el?.textContent?.replace(/\s+/g, ' ').trim()
-  return text !== undefined && text.length > 0 ? text : undefined
+/**
+ * 依次尝试多个选择器，返回第一个有文本的。
+ *
+ * 🔴 必须多来源：同一项信息在不同阶段挂在不同地方 —— 预设在新会话页是输入框上方的
+ * `_seat`，进了对话页却搬到会话标题旁的 `headerActions`；工作区在新会话页有独立选择器，
+ * 对话页只在侧边栏露出。侧栏现在只在对话页显示（新会话是全屏），所以只读 hero 那套
+ * 选择器的话，这两项永远是空的 —— 上一版就是这么翻的车。
+ */
+function textOf(...selectors: string[]): string | undefined {
+  for (const selector of selectors) {
+    const el = document.querySelector(selector)
+    const text = el?.textContent?.replace(/\s+/g, ' ').trim()
+    if (text !== undefined && text.length > 0 && text.length < 40) {
+      return text
+    }
+  }
+  return undefined
 }
 
 /**
@@ -46,8 +58,15 @@ function readStats(): RunStats {
   const tools = rows.filter(el => el.getAttribute('data-variant') !== 'think')
   const thinks = rows.filter(el => el.getAttribute('data-variant') === 'think')
   return {
-    preset: textOf("[class*='_seat']"),
-    workspace: textOf("[class*='workspace']"),
+    // 对话页在会话标题旁，新会话页在输入框上方。
+    preset: textOf("[class*='headerActions'] [class*='_label']", "[class*='headerActions']", "[class*='_seat']"),
+    // 对话页只有侧边栏那个当前文件夹，新会话页才有独立的工作区选择器。
+    workspace: textOf(
+      "[class*='folderActive'] [class*='_label']",
+      "[class*='folderActive']",
+      "[class*='_workspaceLabel']",
+      "[class*='workspace']",
+    ),
     // 模型名在输入框右下角，没有语义属性可依，取按钮文本里含 Free/V4 之类的那颗。
     model: [...document.querySelectorAll('button')]
       .map(b => b.textContent?.trim() ?? '')

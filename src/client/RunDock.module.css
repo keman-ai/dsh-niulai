@@ -83,3 +83,22 @@
 .handle {
   transition: background 140ms ease-out, color 140ms ease-out;
 }
+
+/*
+ * New Session 全屏：hero 阶段收起整根侧栏。
+ *
+ * 原型图的 New Session 是全屏接管的（连 harness 自己的三栏都不在），牛占满整块画面，
+ * 旁边杵一根运行概览会把那份空旷感切碎 —— 何况新会话还没有任何"运行"可概览。
+ *
+ * 用 `:has()` 而不是在 JS 里监听阶段变化：阶段本来就体现在 DOM 上
+ * （`[data-phase='hero']`），交给选择器判断比自己订阅事件再同步状态少一处出错的地方。
+ * harness 自身也在用 `:has()`（`.scrollBody:has([data-conversation-composer-overlay])`）。
+ */
+:global(body[data-dsh-niulai]:has([data-phase='hero'])) [data-niulai-dock] {
+  display: none;
+}
+
+/* 侧栏收起了，主区那份让位也要一并撤掉，否则右边会空出 322px。 */
+:global(body[data-dsh-niulai][data-niulai-dock-open]:has([data-phase='hero']) > div:first-of-type) {
+  padding-right: 0;
+}

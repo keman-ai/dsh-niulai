@@ -140,27 +140,37 @@
  * 属性选择器大小写敏感，只命中前者。
  */
 :global(body[data-dsh-niulai] [class*='_seat']) {
-  background: var(--dsw-alias-bg-layer-2);
+  /*
+   * 🔴 橙点用背景绘制，<b>不能用 ::before</b>。
+   *
+   * 上一版插了个伪元素当圆点，结果把控件里的文字挤出了可视区 —— 那个按钮是
+   * `overflow: hidden` 的固定宽度 flex 容器（实测 159×28），伪元素会真占掉 13px
+   * 的排版空间，用户看到的就是「模式选择器坏了/不见了」。背景不参与布局，配一段
+   * padding 给它让位即可，控件宽高与内部对齐一概不变。
+   */
+  background-color: var(--dsw-alias-bg-layer-2);
+  background-image: radial-gradient(
+    circle at 11px 50%,
+    var(--dsw-alias-state-business-primary) 0 3px,
+    transparent 3px
+  );
+  background-repeat: no-repeat;
+  padding-left: 21px;
   color: var(--dsw-alias-label-primary);
   border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 999px;
-  padding-inline: 12px;
-}
-
-/* 橙点：原型图 `● Standard` 的那颗，表示当前预设正在生效。 */
-:global(body[data-dsh-niulai] [class*='_seat'])::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 7px;
-  border-radius: 999px;
-  background: var(--dsw-alias-state-business-primary);
-  flex: none;
 }
 
 :global(body[data-dsh-niulai] [class*='_seat']:hover) {
-  background: var(--dsw-alias-interactive-bg-hover-solid);
+  background-color: var(--dsw-alias-interactive-bg-hover-solid);
+}
+
+/*
+ * 对话页的预设选择器在会话标题栏里（`headerActions`），不含 `_seat` —— 实测对话页
+ * `[class*='_seat']` 命中 0。给它配同款胶囊，两处观感一致。
+ */
+:global(body[data-dsh-niulai] [class*='headerActions'] button) {
+  border-radius: 999px;
 }
 
 /*
@@ -449,4 +459,104 @@
  */
 :global(body[data-dsh-niulai] [class*='_sidebarCol']) {
   border-right: 1px solid var(--dsw-alias-border-l1);
+}
+
+/* ==========================================================================
+ * 对话流 —— 对照完整原型图。锚点是 playwright 跑真实对话 dump 出来的：
+ *   [data-chat-flow-kind='user']   用户消息
+ *   [data-chat-flow-kind='text']   助手正文
+ *   [data-chat-flow-kind='context'] 上下文注入
+ *   [data-chat-flow-kind='turn-error'] 本轮失败
+ * ========================================================================== */
+
+/*
+ * 助手正文旁的牛头像。
+ *
+ * 原型图里每段助手发言前面都有一颗橙色牛头方块，那是"牛来在说话"最直接的识别。
+ * harness <b>不渲染任何助手头像</b>（dump 过整棵对话流，没有 avatar 类的元素），
+ * 所以这里用伪元素造一颗，绝对定位到正文左侧的空白处。
+ *
+ * ⚠️ 一轮回复可能拆成多个 text 节点，那样会出现多颗牛头。宁可如此也不做
+ * 「只给每轮第一个加」—— CSS 选不出"每轮第一个"，硬凑要靠 JS 遍历 DOM，
+ * 那是本皮肤一直避免的耦合。
+ */
+:global(body[data-dsh-niulai] [data-chat-flow-kind='text']) {
+  position: relative;
+}
+
+:global(body[data-dsh-niulai] [data-chat-flow-kind='text'])::before {
+  content: '';
+  position: absolute;
+  left: -38px;
+  top: 1px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background-image: var(--niulai-cow-avatar);
+  background-size: cover;
+  background-position: center 38%;
+  border: 1px solid rgba(240, 210, 138, 0.32);
+  /* 窄屏下左边没有 38px 富余，隐掉而不是把正文挤走。 */
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  :global(body[data-dsh-niulai] [data-chat-flow-kind='text'])::before {
+    display: none;
+  }
+}
+
+/*
+ * 用户消息气泡：原型图是低对比灰底 + 12px 圆角，靠右。
+ * harness 已有 bubble，这里只把圆角与底色对到原野色，不动布局。
+ */
+:global(body[data-dsh-niulai] [class*='_bubble']) {
+  border-radius: 12px;
+  background: var(--dsw-specific-bubble);
+  border: 1px solid var(--dsw-alias-border-l1);
+}
+
+/*
+ * 上下文注入行：原型图把它压成背景信息（灰、小、不抢眼），
+ * 因为它是每轮都出现的系统噪音，不是用户要读的内容。
+ */
+:global(body[data-dsh-niulai] [data-chat-flow-kind='context']) {
+  opacity: 0.62;
+  font-size: 12px;
+}
+
+:global(body[data-dsh-niulai] [data-chat-flow-kind='context']:hover) {
+  opacity: 1;
+}
+
+/*
+ * 本轮失败：原型图的错误态是红色描边卡片，与普通消息拉开距离。
+ * 这里补一条左侧红边，比纯文字更容易在长对话里扫到。
+ */
+:global(body[data-dsh-niulai] [data-chat-flow-kind='turn-error']) {
+  box-shadow: inset 3px 0 0 0 var(--dsw-alias-state-error-primary);
+  border-radius: 8px;
+  padding-left: 10px;
+}
+
+/*
+ * Agent 预设页：「当前使用」徽章与当前卡片。
+ *
+ * harness 默认给徽章的是白底黑字，在这套暖色里像块补丁。按原型图的色彩分工，
+ * "这个正在生效"属于 run state 一侧，与预设胶囊上那颗橙点同源，所以用橙。
+ *
+ * 选择器限定在 `_cardActive` 之内 —— 源码里只有 `row.isDefault` 的卡片才带这个类
+ * （AgentPresetSection.tsx:254），而 `_badge` 本身还用在别处，不限定会误伤「内置」
+ * 那类标签。
+ */
+:global(body[data-dsh-niulai] [class*='_cardActive'] [class*='_badge']) {
+  background: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-label-primary-foreground);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* 当前卡片的描边跟着换成橙色，与徽章呼应，一眼看出哪张在生效。 */
+:global(body[data-dsh-niulai] [class*='_cardActive']) {
+  border-color: var(--dsw-alias-state-business-primary);
 }
