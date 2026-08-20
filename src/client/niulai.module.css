@@ -87,6 +87,18 @@
    */
   overflow: hidden;
   scrollbar-gutter: auto;
+  /*
+   * 🔴 左右不居中的真凶。harness 在 composer overlay 存在时给它做了不对称定位：
+   *   .scrollBody:has([data-conversation-composer-overlay]) > .composerSeat {
+   *     right: var(--dsh-scrollbar-width);  left: 0;
+   *   }
+   * 那 8px 是补偿「Chat 的座位被自身滚动条压窄」用的。上面既然已经把 hero 的滚动
+   * 关掉、没有滚动条要让位，这份补偿就成了纯粹的左右不对称。
+   *
+   * 覆盖变量而不是去改 .composerSeat 的 right：变量是 ui-theme 公开的口子，
+   * 改它不必再多匹配一个哈希类名，作用域也天然只限 hero。
+   */
+  --dsh-scrollbar-width: 0px;
 }
 
 /* 贴底后，居中态为浮空留的那 32px 底部内边距就成了多余的缝。 */
