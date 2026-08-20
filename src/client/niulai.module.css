@@ -78,6 +78,15 @@
  */
 :global(body[data-dsh-niulai] [data-phase='hero'] [class*='scrollBody']) {
   justify-content: flex-end;
+  /*
+   * hero 没有可滚的内容，牛应当铺满整屏。不关掉这两条就会：
+   * ① overflow-y: auto 在贴底后因内容溢出冒出一条滚动条；
+   * ② scrollbar-gutter: stable 恒定预留一条滚动条的宽度（harness 为让 composer
+   *    在 Chat 与 overlay 两种落位下左右不跳而设），hero 里没有滚动条要让位，
+   *    这段预留就变成了把整列往一边推的偏移 —— 看上去就是输入框没居中。
+   */
+  overflow: hidden;
+  scrollbar-gutter: auto;
 }
 
 /* 贴底后，居中态为浮空留的那 32px 底部内边距就成了多余的缝。 */
