@@ -89,3 +89,43 @@
   position: relative;
   z-index: 1;
 }
+
+/*
+ * 预设选择器 → 设计稿里那排胶囊按钮的降级实现。
+ *
+ * 设计稿画的是 `Standard / Code / Minimal / Creator` 四个并排按钮，当前项米黄实心。
+ * harness 里没有这个部件 —— 等价物是 `ui-agent-preset` 的<b>一个下拉</b>，而它的
+ * slot 不允许第三方覆盖（重复注册直接抛错，locale 也一样）。所以做不到 1:1 换成
+ * 四个按钮，这里只把那个下拉的<b>样式</b>做成设计稿里「当前预设」那颗米黄胶囊。
+ *
+ * 选择器用 `_seat` 而不是 `seat`：CSS module 哈希形如 `_1Onn0a_seat`，而对话区还有
+ * 一个 `_1Onn0a_composerSeat`。属性选择器大小写敏感，`_seat` 只命中前者。
+ */
+:global(body[data-dsh-niulai] [class*='_seat']) {
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-label-primary-foreground);
+  border-color: transparent;
+  border-radius: 999px;
+  padding-inline: 12px;
+  font-weight: 600;
+}
+
+/* 图标跟着走：harness 的图标用 currentColor，父级换色即可，不必逐个选。 */
+:global(body[data-dsh-niulai] [class*='_seat'] svg) {
+  color: inherit;
+}
+
+:global(body[data-dsh-niulai] [class*='_seat']:hover) {
+  background: var(--dsw-alias-button-primary-hover);
+}
+
+/*
+ * 工作区选择器（那个文件夹下拉）配成描边胶囊，与米黄那颗成一组。
+ * 设计稿里它不存在 —— 稿子的 "Code" 是预设名不是工作区 —— 但真实产品里它就在旁边，
+ * 放着不管会让一颗胶囊孤零零地立在一排方角控件中间。
+ */
+:global(body[data-dsh-niulai] [data-phase='hero'] [class*='workspace']) {
+  border-radius: 999px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  padding-inline: 12px;
+}
