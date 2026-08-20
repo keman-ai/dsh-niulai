@@ -254,3 +254,53 @@
   font-weight: 600;
   color: var(--dsw-alias-brand-primary);
 }
+
+/* ==========================================================================
+ * 右侧详情面板 —— 对齐设计稿的卡片语言。
+ *
+ * ⚠️ 先说清楚<b>没做什么</b>：设计稿那个 Details 是「运行概览」（Current run /
+ * Goal / Context files / Usage 四张卡片），而 harness 的详情面板是「某次工具调用
+ * 的详情」，只有 Input 与 Output 两段 —— 两者不是同一个东西，不是换皮的问题。
+ * 全部 29 个 slot 里与详情相关的只有 `conversation.details.tool`（渲染工具结果的
+ * 位置），没有"往面板加卡片"的口子，`data-slot="details"` 也已被官方组件占据。
+ * 所以这里只做视觉语言对齐，不伪造那四张卡片。
+ *
+ * 设计稿 Component language 的原文：Radius 8–12px · 1px low-contrast borders ·
+ * almost-flat surfaces。下面照此执行。
+ * ========================================================================== */
+
+/* Input / Output 两段升格成带描边的卡片，与设计稿的 Current run / Goal 同款。 */
+:global(body[data-dsh-niulai] [data-slot='details'] [class*='_section']) {
+  background: var(--dsw-alias-bg-layer-1);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+
+/* 段标题：设计稿里是加粗小字，与正文拉开层级。 */
+:global(body[data-dsh-niulai] [data-slot='details'] [class*='_sectionLabel']) {
+  font-weight: 600;
+  color: var(--dsw-alias-label-primary);
+  margin-bottom: 8px;
+}
+
+/* 面板标题行：与卡片之间用一条低对比分隔，而不是留白硬断。 */
+:global(body[data-dsh-niulai] [data-slot='details'] [class*='_header']) {
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+/*
+ * 空态与运行态的提示文字。
+ *
+ * 🔴 这两个态在 harness 里<b>共用同一个 `css.empty` 元素</b>，只有文本不同
+ * （`details.empty` / `details.running`），CSS 选不了文本，所以无法只给运行态
+ * 换成设计稿的「● 牛来正在干活」。要区分只能上 MutationObserver 读文本再替换，
+ * 那是全项目目前唯一还没用过的脏手段，没有业主点头不做。
+ * 这里只统一排版，不动文案。
+ */
+:global(body[data-dsh-niulai] [data-slot='details'] [class*='_empty']) {
+  color: var(--dsw-alias-label-tertiary);
+  padding: 18px 14px;
+  text-align: center;
+}
