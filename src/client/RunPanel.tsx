@@ -15,7 +15,8 @@
  * 就读不到，读不到时显示占位符而不是崩掉。
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { getUsage, subscribeUsage, type UsageSnapshot } from './usage-store.ts'
 import css from './RunPanel.module.css'
 
 /** 一次读数的结果。字段读不到时为 undefined，渲染层显示占位符。 */
@@ -77,6 +78,28 @@ function readStats(): RunStats {
   }
 }
 
+/**
+ * token 数压成 31.8K / 1.2M。
+ * 与 harness 的 `formatTokens` 同口径（三位数以内保一位小数），免得侧栏和官方
+ * 那颗上下文圆环显示出不同的数字。
+ */
+function formatTokens(n: number): string {
+  const scaled = (v: number): string =>
+    v >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10)
+  if (n < 1_000) return String(n)
+  if (n < 1_000_000) return `${scaled(n / 1_000)}K`
+  return `${scaled(n / 1_000_000)}M`
+}
+
+/** 毫秒压成设计稿的 mm:ss；超过一小时补出小时段，免得 90 分钟显示成 30:00。 */
+function formatElapsed(ms: number): string {
+  const total = Math.round(ms / 1_000)
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  const minutes = Math.floor(total / 60)
+  if (minutes < 60) return `${pad(minutes)}:${pad(total % 60)}`
+  return `${Math.floor(minutes / 60)}:${pad(minutes % 60)}:${pad(total % 60)}`
+}
+
 function Row({ label, value }: { label: string, value: string }) {
   return (
     <div className={css.row}>
@@ -95,9 +118,32 @@ function Card({ title, children }: { title: string, children: React.ReactNode })
   )
 }
 
-/** 面板本体。挂在 `conversation.view` 上，与「对话」「轨迹」并列。 */
+/** 上下文占用：`31.8K / 128K`。供应商还没报用量前两个值都缺席，显示占位符。 */
+function contextText(usage: UsageSnapshot): string {
+  if (usage.usedTokens === undefined || usage.contextWindow === undefined) {
+    return '—'
+  }
+  return `${formatTokens(usage.usedTokens)} / ${formatTokens(usage.contextWindow)}`
+}
+
+/**
+ * 耗时：模型请求 + 工具执行的墙钟之和。
+ *
+ * 不用「从会话开始到现在」的墙钟：那把用户思考、去泡咖啡的时间也算进去了，
+ * 对「这次运行花了多少」没有意义。harness 的 sessionStats 分别记了这两段。
+ */
+function elapsedText(usage: UsageSnapshot): string {
+  if (usage.llmMs === undefined && usage.toolMs === undefined) {
+    return '—'
+  }
+  return formatElapsed((usage.llmMs ?? 0) + (usage.toolMs ?? 0))
+}
+
+/** 面板本体。挂在自建的右侧栏里。 */
 export function NiulaiRunPanel() {
   const [stats, setStats] = useState<RunStats>(() => readStats())
+  // 用量来自 harness 的官方投影，由挂在 composer.dock 的采集器递进来（见 usage-store）。
+  const usage = useSyncExternalStore(subscribeUsage, getUsage, getUsage)
 
   useEffect(() => {
     // 轮询而不是 MutationObserver：这里只读聚合计数，一秒一次足够跟上，
@@ -121,14 +167,26 @@ export function NiulaiRunPanel() {
         <Row label="Workspace" value={stats.workspace ?? dash} />
       </Card>
 
-      <Card title="This session">
+      <Card title="Usage">
+        <Row label="Context" value={contextText(usage)} />
+        {/* 工具次数用投影里的 steps 更准，但投影缺席时退回数 DOM 的结果 */}
         <Row label="Tool calls" value={String(stats.toolCalls)} />
-        <Row label="Thinking" value={String(stats.thinking)} />
+        <Row label="Elapsed" value={elapsedText(usage)} />
+        {usage.outputTokens !== undefined && (
+          <Row
+            label="Tokens"
+            value={`${formatTokens(usage.inputTokens ?? 0)} ↑ / ${formatTokens(usage.outputTokens)} ↓`}
+          />
+        )}
+        {usage.cacheHitPercent !== undefined && (
+          <Row label="Cache hit" value={`${usage.cacheHitPercent}%`} />
+        )}
       </Card>
 
-      <p className={css.note}>
-        用量与目标进度需要 harness 的事件投影，本面板暂未接入；以上取自当前会话已渲染的内容。
-      </p>
+      <Card title="This session">
+        <Row label="Turns" value={usage.turns === undefined ? dash : String(usage.turns)} />
+        <Row label="Thinking" value={String(stats.thinking)} />
+      </Card>
     </div>
   )
 }

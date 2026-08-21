@@ -1,6 +1,21 @@
 /** 牛来右侧边栏：常驻、可收起。宽度取设计稿的 details ≈ 322px。 */
 
+/*
+ * 🔴 默认不可见，只有皮肤真的激活了才现身。
+ *
+ * 反过来写（默认显示、靠皮肤规则去藏）会漏掉一段窗口：插件的 JS 要等 bundle 执行完
+ * 才能把 `data-dsh-niulai` 打到 body 上，而 harness 的界面在那之前就渲染好了。实测
+ * 冷启动时 phase 已经是 hero、皮肤却还没激活（284ms → 359ms，冷编译时更长）。那段
+ * 时间里侧栏照常显示、主区照常让位，屏幕上就是"harness 原生样式 + 一根侧栏"——
+ * 看起来像进了对话页，而窗口长短随机，表现就是"刷新几次两种界面来回切"。
+ *
+ * 所以判据放在这里：皮肤没激活 = 这个插件在界面上不存在。
+ */
 .dock {
+  display: none;
+}
+
+:global(body[data-dsh-niulai]) .dock {
   position: fixed;
   top: 0;
   right: 0;
@@ -70,7 +85,11 @@
  * （模态、菜单），给 body 加内边距不会影响它们，反而会让固定层与内容错位。
  * 这里只推真正承载布局的那一层。
  */
-:global(body[data-niulai-dock-open] > div:first-of-type) {
+/*
+ * 同样必须带 `[data-dsh-niulai]`：漏了它，皮肤还没激活的那段窗口里主区已经让出
+ * 322px，右边空一条、内容却还是原生配色 —— 正是"看起来像对话页"的另一半原因。
+ */
+:global(body[data-dsh-niulai][data-niulai-dock-open] > div:first-of-type) {
   padding-right: 322px;
   box-sizing: border-box;
 }
@@ -100,5 +119,30 @@
 
 /* 侧栏收起了，主区那份让位也要一并撤掉，否则右边会空出 322px。 */
 :global(body[data-dsh-niulai][data-niulai-dock-open]:has([data-phase='hero']) > div:first-of-type) {
+  padding-right: 0;
+}
+
+/*
+ * 🔴 `settling` 必须和 hero 一样收起侧栏。
+ *
+ * harness 的阶段是<b>三</b>态：`settling` / `hero` / `active`（ConversationRoot）。
+ * settling 是"会话还在回放，落 hero 还是落对话页尚不可知"，那段时间它把 composer
+ * 藏起来，免得闪一下居中输入框再跳到贴底那根。
+ *
+ * 早先这里只认 hero，于是刷新后的 settling 窗口里：牛不画、侧栏却冒出来、主区还让出
+ * 322px —— 屏幕上就是一个空的对话页。会话摘要回得快就直接进 hero（看到牛），回得慢
+ * 就先经过 settling（看到"对话详情"），表现正是"多刷几次有几率出牛"。
+ *
+ * 这里跟着 harness 取中立：未知就什么都不主张 —— 侧栏不出现（它一露面就等于宣告
+ * "已经在对话里了"），也不抢先画牛（settling 同样可能通向有内容的会话，抢画就会闪）。
+ *
+ * 逗号分组写不进 `:global()`（lightningcss 会在 Comma 处报错，踩过），所以两个阶段
+ * 各写一条，别合并。
+ */
+:global(body[data-dsh-niulai]:has([data-phase='settling'])) [data-niulai-dock] {
+  display: none;
+}
+
+:global(body[data-dsh-niulai][data-niulai-dock-open]:has([data-phase='settling']) > div:first-of-type) {
   padding-right: 0;
 }

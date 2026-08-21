@@ -75,6 +75,19 @@ declare module '@deepseek-ai/cordis' {
     label: () => string
   }
 
+  /**
+   * composer.dock 条目注册项。
+   *
+   * 该 slot 是 `{ kind: 'list', scope: 'session' }`（见 ui-conversation 的
+   * apply.ts / contract/slots.ts），官方 StatsLine 以 order 0 挂在上面，
+   * 第三方追加不会顶掉它 —— single 型才会重复注册抛错。
+   */
+  export interface DockSlotRegistration {
+    name: 'conversation.composer.dock'
+    id: string
+    order?: number
+  }
+
   /** slot 服务，只列本插件用到的。 */
   export interface SlotsService {
     /** 在目标 slot 就绪时执行注册；返回 disposer。 */
@@ -84,7 +97,7 @@ declare module '@deepseek-ai/cordis' {
      * 🔴 `single` 型 slot 重复注册会抛错，只有 `list` 型允许多个占用者
      * （`conversation.view` 正是 list）。
      */
-    register(registration: ViewSlotRegistration, component: unknown): Disposer
+    register(registration: ViewSlotRegistration | DockSlotRegistration, component: unknown): Disposer
   }
 
   /** 插件 apply 收到的上下文（本插件用到的成员）。 */

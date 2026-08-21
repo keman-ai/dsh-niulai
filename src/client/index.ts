@@ -16,6 +16,7 @@ import { createRoot } from 'react-dom/client'
 import type { Context } from '@deepseek-ai/cordis'
 import { NIULAI_COW_AVATAR, NIULAI_COW_COVER } from './cow-art.generated.ts'
 import { NiulaiRunDock } from './RunDock.tsx'
+import { NiulaiUsageProbe } from './UsageProbe.tsx'
 import { NIULAI_TOKENS } from './tokens.ts'
 import './niulai.module.css'
 
@@ -31,11 +32,19 @@ export const BODY_ATTRIBUTE = 'data-dsh-niulai'
 /** 背景图变量名：CSS 里读它，值在这里注入，图片资源不进样式表。 */
 const COVER_VARIABLE = '--niulai-cow-cover'
 
+/**
+ * 自动应用的启动窗口。
+ *
+ * 要盖过的是 ui-theme 的 `adopt()` —— Host 偏好快照到达时把主题覆盖回内置值。实测
+ * 它在 300ms 上下到达，冷启动会更慢，取 8 秒留足余量；窗口一过插件就彻底松手。
+ */
+const AUTO_APPLY_WINDOW_MS = 8_000
+
 /** 小牛头变量名，给「正在干活」的状态标识用。 */
 const AVATAR_VARIABLE = '--niulai-cow-avatar'
 
 /** 主题服务；`inject` 保证它先就绪。 */
-export const inject = ['theme']
+export const inject = ['theme', 'slots']
 
 /** 浏览器半的配置，与 host 半同名字段。 */
 export interface Config {
@@ -66,6 +75,23 @@ export function apply(ctx: Context, config: Config = {}): void {
    */
   ctx.effect(() => mountDock(), 'niulai: run overview dock')
 
+  /*
+   * 用量采集器。
+   *
+   * 侧栏是自建节点，拿不到 slot 注入的 `useProjection`，所以在 `composer.dock`
+   * 上挂一个零渲染条目替它读投影（见 UsageProbe / usage-store）。这个 slot 是
+   * `{ kind: 'list' }`，官方 StatsLine 也在上面，追加不会顶掉它。
+   *
+   * 用 `inject` 而不是直接 register：目标 slot 由 ui-conversation 声明，本插件
+   * 的加载顺序不保证在它之后，inject 会等它就绪再注册。
+   */
+  ctx.effect(() => ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
+    name: 'conversation.composer.dock',
+    id: 'niulai-usage',
+    // 排在官方 stats（order 0）之后；反正不画东西，只是不去打乱既有顺序。
+    order: 100,
+  }, NiulaiUsageProbe)), 'niulai: usage probe')
+
   ctx.effect(() => {
     const unregister = ctx.theme.register({ id: THEME_ID, colorScheme: 'dark', tokens: NIULAI_TOKENS })
     const unmount = mountStage(ctx, config.autoApply !== false)
@@ -95,26 +121,28 @@ function mountStage(ctx: Context, autoApply: boolean): () => void {
 
   let attached = false
   /**
-   * 自动应用只做一次。
+   * 启动窗口是否已过。窗口内负责把主题按住在牛来，窗口后完全不干预。
    *
-   * 🔴 不能放在 apply() 里直接 setTheme：ui-theme 的 loopback 浏览器先用 `system`
-   * 顶上，**再到后台去读 Host 的 `ui-theme.preference`**，读回来会把插件刚设的选择
-   * 覆盖掉 —— 表现就是"装了皮肤但打开还是内置暗色"，而且毫无报错。所以改成跟着
-   * `theme/change` 走：等偏好落定后的那一次通知里再切，切完置位，此后不再干预，
-   * 用户随时可以在外观里切走，插件不会抢回来。
+   * 🔴 为什么不能「切成功一次就收手」（上一版就是这么写的，会翻车）：
+   *
+   * ui-theme 的 `setTheme` 只把**内置**偏好写进 Host —— `isThemePreference('niulai')`
+   * 是 false，第三方主题 id 根本不进持久化。而 Host 快照到达时它会执行 `adopt()`，
+   * 拿 Host 里存的那个内置值**覆盖**当前偏好。于是顺序一旦是「插件先切好 → 快照后到」，
+   * 牛来就被悄悄换回内置主题，且没有任何报错；而「切成功一次就收手」意味着此时插件
+   * 已经放手，再也不会切回来 —— 表现就是"装了皮肤，刷新几次又变回默认"。
+   * 两者谁先谁后是竞态，所以时好时坏。
+   *
+   * 改成窗口制：加载后的这几秒内，每次 `theme/change` 都把主题按回牛来，`adopt()`
+   * 无论早到晚到都会被纠正；窗口一过就彻底松手，用户在「设置 → 外观」里切走不会被抢。
+   * 代价是每次刷新都会重新应用 —— 这是 harness 不持久化第三方主题 id 的必然结果，
+   * 想永久换走请把 `autoApply` 配成 false 或卸载本插件。
    */
-  let autoApplied = false
+  let settled = false
+  const settleTimer = setTimeout(() => { settled = true }, AUTO_APPLY_WINDOW_MS)
 
   const sync = (): void => {
     const activeId = ctx.theme.getTheme().active.id
-    // 一旦真的切成功过，就把主动权彻底交还用户：此后切走不再抢回来。
-    if (activeId === THEME_ID) {
-      autoApplied = true
-    } else if (autoApply && !autoApplied) {
-      // 🔴 必须「切到成功为止」而不是「只切一次」：ui-theme 先用 system 顶上、
-      // 再到后台读 Host 的 ui-theme.preference，读回来会把插件刚设的值覆盖掉。
-      // 只切一次的话，那一次十有八九落在覆盖之前，表现就是装了皮肤却还是内置暗色，
-      // 而且毫无报错 —— 实测就是这么翻的车。
+    if (activeId !== THEME_ID && autoApply && !settled) {
       try {
         ctx.theme.setTheme(THEME_ID)
       } catch (error) {
@@ -143,6 +171,7 @@ function mountStage(ctx: Context, autoApply: boolean): () => void {
 
   return () => {
     off()
+    clearTimeout(settleTimer)
     body.removeAttribute(BODY_ATTRIBUTE)
     body.style.removeProperty(COVER_VARIABLE)
     body.style.removeProperty(AVATAR_VARIABLE)
